@@ -1,5 +1,5 @@
 {
-  "name": "security-oracle-smart-contracts",
+  "name": "aegis-core-smart-contracts",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Lossless-Cash/security-oracle-smart-contracts.git"
+    "url": "git+https://github.com/Lossless-Cash/aegis-core-smart-contracts.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Lossless-Cash/security-oracle-smart-contracts/issues"
+    "url": "https://github.com/Lossless-Cash/aegis-core-smart-contracts/issues"
   },
-  "homepage": "https://github.com/Lossless-Cash/security-oracle-smart-contracts#readme",
+  "homepage": "https://github.com/Lossless-Cash/aegis-core-smart-contracts#readme",
   "devDependencies": {
     "@openzeppelin/contracts": "^4.5.0",
     "@openzeppelin/contracts-upgradeable": "^4.5.2"

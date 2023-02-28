@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./utils/LosslessDevEnvironment.t.sol";
 
 contract EnvironmentTests is LosslessDevEnvironment {
-    
     /// @notice Test deployed Random ERC20 Token
     function testERC20TokenDeploy() public {
         assertEq(erc20Token.totalSupply(), totalSupply);
@@ -13,10 +12,10 @@ contract EnvironmentTests is LosslessDevEnvironment {
         assertEq(erc20Token.owner(), erc20Admin);
     }
 
-    /// @notice Test deployed Security Oracle
-    function testSecurityOracleSetUp() public {
-        assertEq(securityOwner, securityOracle.owner());
-        assertEq(securityOracle.subFee(), subscriptionFee);
-        assertEq(address(securityOracle.subToken()), address(erc20Token));
+    /// @notice Test deployed AegisCore
+    function testAegisCoreSetUp() public {
+        assertEq(securityOwner, aegisCore.owner());
+        assertEq(aegisCore.subFee(), subscriptionFee);
+        assertEq(address(aegisCore.subToken()), address(erc20Token));
     }
 }

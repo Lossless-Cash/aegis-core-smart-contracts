@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/ContextUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/security/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./libraries/TransferHelper.sol";
 
-import "./interfaces/ILosslessSecurityOracle.sol";
+import "./interfaces/ILosslessAegisCore.sol";
 
-contract LosslessSecurityOracle is
-    ILssSecurityOracle,
+contract LosslessAegisCore is
+    ILssAegisCore,
     Initializable,
     ContextUpgradeable,
     PausableUpgradeable,
@@ -50,7 +50,26 @@ contract LosslessSecurityOracle is
     }
 
     modifier onlyOracle() {
-        require(hasRole(ORACLE, msg.sender), "LSS: Only Oracle Controller");
+        require(hasRole(ORACLE, msg.sender), "LSS: Must be subscribed");
+        _;
+    }
+
+    modifier onlySub() {
+        require(
+            block.number <= subscriptions[msg.sender].endingBlock ||
+                subFee == 0,
+            "LSS: Must be subscribed"
+        );
+        _;
+    }
+
+    modifier onlySubOrOracle() {
+        require(
+            block.number <= subscriptions[msg.sender].endingBlock ||
+                subFee == 0 ||
+                hasRole(ORACLE, msg.sender),
+            "LSS: Must be subscribed or Oracle"
+        );
         _;
     }
 
@@ -66,7 +85,7 @@ contract LosslessSecurityOracle is
 
     // --- SETTERS ---
 
-    /// @notice This function sets the security oracle address
+    /// @notice This function sets the aegis core address
     /// @param _oracle Lossless Oracle Controller address
     function addOracle(address _oracle) public override onlyOwner {
         require(!hasRole(ORACLE, _oracle), "LSS: Cannot set same address");
@@ -98,9 +117,12 @@ contract LosslessSecurityOracle is
 
     /// @notice This function sets the risk score for an array of addresses
     /// @param newScores Array of new addresses with scores using the RiskScores struct
-    function setRiskScores(RiskScores[] calldata newScores) public onlyOracle {
+    function setRiskScores(RiskScores[] calldata newScores)
+        public
+        onlySubOrOracle
+    {
         uint256 arrayLen = newScores.length;
-        for (uint256 i = 0; i < arrayLen;i++) {
+        for (uint256 i = 0; i < arrayLen; i++) {
             RiskScores memory scores = newScores[i];
 
             riskScores[scores.addr] = scores.score;
@@ -117,28 +139,10 @@ contract LosslessSecurityOracle is
         public
         view
         override
+        onlySub
         returns (uint8)
     {
-        if (!getIsSubscribed(msg.sender)) {
-            return 0;
-        } else {
-            return riskScores[_address];
-        }
-    }
-
-    /// @notice This function returns if an address is subscribed
-    /// @param _address address to check
-    function getIsSubscribed(address _address)
-        public
-        view
-        override
-        returns (bool)
-    {
-        if (subFee == 0) {
-            return true;
-        } else {
-            return (block.number <= subscriptions[_address].endingBlock);
-        }
+        return riskScores[_address];
     }
 
     // --- SUBSCRIPTIONS ---
@@ -149,7 +153,7 @@ contract LosslessSecurityOracle is
     function subscribe(address _address, uint256 _blocks) public override {
         require(_blocks > 100, "LSS: Minimum 101 blocks");
         require(_address != address(0), "LSS: Cannot sub zero address");
-        
+
         Subscription storage sub = subscriptions[_address];
 
         uint256 amountToPay = _blocks * subFee;
@@ -174,7 +178,6 @@ contract LosslessSecurityOracle is
 
     /// @notice This function withdraws the tokens coming from subscriptions
     function withdrawTokens() public override onlyOwner returns (uint256) {
-
         uint256 withdrawPool = subToken.balanceOf(address(this));
 
         TransferHelper.safeTransfer(
